@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CEO Brain</title>
+  <script>
+    // Captura o hash com o token do Supabase e redireciona para o app
+    // mantendo todos os parâmetros intactos
+    var hash  = window.location.hash  || '';
+    var query = window.location.search || '';
+    var dest  = '/ceo-brain/' + query + hash;
+    window.location.replace(dest);
+  </script>
+</head>
+<body></body>
+</html>
