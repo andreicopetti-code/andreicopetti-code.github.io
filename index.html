@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CEO Brain</title>
+  <script>
+    // Redireciona para o app mantendo hash e query string intactos
+    var hash  = window.location.hash  || '';
+    var query = window.location.search || '';
+    window.location.replace('/ceo-brain/' + query + hash);
+  </script>
+</head>
+<body></body>
+</html>
