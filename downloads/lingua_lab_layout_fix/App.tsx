@@ -59,7 +59,11 @@ export default function App() {
           />
         ) : null}
         {screen === 'end' ? (
-          <EndScreen session={session} onRestart={handleRestart} />
+          <EndScreen
+            session={session}
+            onRestart={handleRestart}
+            onMenu={handleExitGame}
+          />
         ) : null}
       </View>
     </SafeAreaProvider>

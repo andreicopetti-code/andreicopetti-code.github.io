@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,7 +26,7 @@ type Props = {
   session: GameSession;
   onSessionChange: (s: GameSession) => void;
   onEnd: (s: GameSession) => void;
-  onExit?: () => void;
+  onExit: () => void;
 };
 
 const CHEF_THRESHOLDS = [30, 80, 180, 350, 600];
@@ -39,8 +41,27 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
   const fbAt = useRef(0);
   const shake = useRef(new Animated.Value(0)).current;
 
+  const confirmExit = () => {
+    Alert.alert(
+      'Sair da partida?',
+      'O progresso desta sessão não será salvo no ranking.',
+      [
+        { text: 'Continuar', style: 'cancel' },
+        { text: 'Sair', style: 'destructive', onPress: onExit },
+      ],
+    );
+  };
+
   useEffect(() => {
     loadVoiceOn().then(setVoiceOn);
+  }, []);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      confirmExit();
+      return true;
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {
@@ -183,16 +204,13 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
       >
         <View style={styles.header}>
-          {onExit ? (
-            <Pressable onPress={onExit} hitSlop={10} style={styles.backBtn}>
-              <Text style={styles.backText}>←</Text>
-            </Pressable>
-          ) : null}
+          <Pressable onPress={confirmExit} hitSlop={12} style={styles.backBtn}>
+            <Text style={styles.backText}>←</Text>
+          </Pressable>
           <Text style={styles.logo} numberOfLines={1}>
-            👨‍🍳 <Text style={styles.logoName}>La Cocina Porteña</Text>
+            👨‍🍳 <Text style={styles.logoName}>Cocina</Text>
           </Text>
           <View style={styles.hud}>
             <Pressable onPress={toggleVoice} style={styles.badge}>
@@ -213,9 +231,7 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
         </View>
         <Text style={styles.retryCount}>
           {Math.min(session.idx, session.origLen)}/{session.origLen}
-          {retryCount > 0
-            ? ` · ↩ ${retryCount} carta${retryCount > 1 ? 's' : ''} em revisão`
-            : ''}
+          {retryCount > 0 ? ` · ↩ ${retryCount}` : ''}
         </Text>
 
         <View style={styles.lives}>
@@ -226,7 +242,6 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
           ))}
         </View>
 
-        {/* Card + input stay at the TOP so Android keyboard resize keeps them visible */}
         <View style={styles.playTop}>
           <Pressable onPress={session.fb ? skipWait : undefined}>
             <Animated.View
@@ -250,14 +265,8 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
                     {icon} {cur.cat.toUpperCase()}
                   </Text>
                 </View>
-                <Text style={styles.diff}>
-                  {'🌶'.repeat(cur.dif || 1)}
-                  <Text style={{ opacity: 0.22 }}>
-                    {'🌶'.repeat(3 - (cur.dif || 1))}
-                  </Text>
-                </Text>
                 {cur.immediateRetry ? (
-                  <Text style={styles.retryPill}>⚡ tente de novo</Text>
+                  <Text style={styles.retryPill}>⚡ de novo</Text>
                 ) : cur.retry ? (
                   <Text style={styles.retryPill}>↩ revisar</Text>
                 ) : null}
@@ -276,7 +285,9 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
                 ) : null}
                 {session.fb === 'err' ? (
                   <>
-                    <Text style={styles.fbWrong}>{session.wrongIn}</Text>
+                    <Text style={styles.fbWrong} numberOfLines={1}>
+                      {session.wrongIn}
+                    </Text>
                     <Text style={styles.fbArrow}>→</Text>
                     <Text style={styles.fbCorrect}>{cur.es[0]}</Text>
                     <Pressable onPress={() => speakES(cur.es[0], true, true)}>
@@ -287,7 +298,7 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
               </View>
               {exampleParts ? (
                 <View style={styles.example}>
-                  <Text style={styles.exampleText}>
+                  <Text style={styles.exampleText} numberOfLines={2}>
                     Ex: {exampleParts.before}
                     <Text style={styles.exampleEm}>{exampleParts.highlight}</Text>
                     {exampleParts.after}
@@ -327,9 +338,7 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
           </View>
           <Text style={styles.hint}>
             {session.fb === null
-              ? `Carta ${session.idx + 1} de ${session.deck.length}${
-                  session.deck.length > session.origLen ? ' (com revisões)' : ''
-                }`
+              ? `Carta ${session.idx + 1}/${session.deck.length}`
               : 'Toque na carta para continuar'}
           </Text>
         </View>
@@ -346,18 +355,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   backBtn: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: colors.badgeBg,
+    borderWidth: 1,
+    borderColor: colors.badgeBorder,
   },
-  backText: { fontSize: 20, color: colors.accent, fontWeight: '700' },
+  backText: { fontSize: 18, color: colors.accent, fontWeight: '700' },
   logo: { flex: 1, fontSize: 13 },
   logoName: { fontWeight: '800', color: colors.accent },
   hud: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -397,10 +410,7 @@ const styles = StyleSheet.create({
   },
   heart: { fontSize: 18 },
   heartLost: { opacity: 0.2 },
-  playTop: {
-    paddingHorizontal: 14,
-    paddingTop: 2,
-  },
+  playTop: { paddingHorizontal: 14, paddingTop: 2 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 2,
@@ -426,7 +436,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  diff: { fontSize: 10 },
   retryPill: {
     fontSize: 10,
     fontWeight: '700',
@@ -451,7 +460,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   fbOk: { fontSize: 16, fontWeight: '800', color: colors.green },
   fbWrong: {
@@ -459,6 +468,7 @@ const styles = StyleSheet.create({
     color: colors.red,
     textDecorationLine: 'line-through',
     opacity: 0.8,
+    maxWidth: '40%',
   },
   fbArrow: { color: colors.dim, fontSize: 13 },
   fbCorrect: { fontSize: 17, fontWeight: '800', color: colors.green },
