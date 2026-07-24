@@ -15,9 +15,8 @@ import {
   addToRanking,
   loadChef,
   loadRanking,
-  loadSRS,
 } from '../lib/storage';
-import type { ChefData, GameSession, RankingEntry, SrsDb } from '../types';
+import type { ChefData, GameSession, RankingEntry } from '../types';
 
 type Props = {
   session: GameSession;
@@ -28,17 +27,15 @@ type Props = {
 export function EndScreen({ session, onRestart, onMenu }: Props) {
   const [chef, setChef] = useState<ChefData>({ consolidated: 0, achievements: [] });
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [srs, setSrs] = useState<SrsDb>({});
   const [name, setName] = useState('');
   const [justSaved, setJustSaved] = useState(false);
   const [prevRecord, setPrevRecord] = useState<RankingEntry | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [c, r, db] = await Promise.all([loadChef(), loadRanking(), loadSRS()]);
+      const [c, r] = await Promise.all([loadChef(), loadRanking()]);
       setChef(c);
       setRanking(r);
-      setSrs(db);
       setPrevRecord(r[0] || null);
     })();
   }, []);
