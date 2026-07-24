@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,17 +24,17 @@ type Props = {
   session: GameSession;
   onSessionChange: (s: GameSession) => void;
   onEnd: (s: GameSession) => void;
+  onExit?: () => void;
 };
 
 const CHEF_THRESHOLDS = [30, 80, 180, 350, 600];
 
-export function GameScreen({ session, onSessionChange, onEnd }: Props) {
+export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
   const [answer, setAnswer] = useState('');
   const [voiceOn, setVoiceOn] = useState(true);
   const [toast, setToast] = useState<{ msg: string; color?: string } | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const inputRef = useRef<TextInput>(null);
-  const scrollRef = useRef<ScrollView>(null);
   const advTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fbAt = useRef(0);
   const shake = useRef(new Animated.Value(0)).current;
@@ -49,24 +47,10 @@ export function GameScreen({ session, onSessionChange, onEnd }: Props) {
     if (session.fb === null) {
       const pre = prefixChar(session.deck[session.idx]);
       setAnswer(pre);
-      // Focus after layout so keyboard resize can keep input visible
-      const t = setTimeout(() => {
-        inputRef.current?.focus();
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, 120);
+      const t = setTimeout(() => inputRef.current?.focus(), 200);
       return () => clearTimeout(t);
     }
   }, [session.idx, session.fb]);
-
-  useEffect(() => {
-    const show = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-      },
-    );
-    return () => show.remove();
-  }, []);
 
   useEffect(() => {
     return () => {
@@ -198,11 +182,16 @@ export function GameScreen({ session, onSessionChange, onEnd }: Props) {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
         <View style={styles.header}>
-          <Text style={styles.logo}>
+          {onExit ? (
+            <Pressable onPress={onExit} hitSlop={10} style={styles.backBtn}>
+              <Text style={styles.backText}>←</Text>
+            </Pressable>
+          ) : null}
+          <Text style={styles.logo} numberOfLines={1}>
             👨‍🍳 <Text style={styles.logoName}>La Cocina Porteña</Text>
           </Text>
           <View style={styles.hud}>
@@ -237,14 +226,8 @@ export function GameScreen({ session, onSessionChange, onEnd }: Props) {
           ))}
         </View>
 
-        <ScrollView
-          ref={scrollRef}
-          style={styles.flex}
-          contentContainerStyle={styles.playArea}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-        >
+        {/* Card + input stay at the TOP so Android keyboard resize keeps them visible */}
+        <View style={styles.playTop}>
           <Pressable onPress={session.fb ? skipWait : undefined}>
             <Animated.View
               key={shakeKey}
@@ -279,7 +262,9 @@ export function GameScreen({ session, onSessionChange, onEnd }: Props) {
                   <Text style={styles.retryPill}>↩ revisar</Text>
                 ) : null}
               </View>
-              <Text style={styles.ptWord}>{cur.pt}</Text>
+              <Text style={styles.ptWord} numberOfLines={2} adjustsFontSizeToFit>
+                {cur.pt}
+              </Text>
               <View style={styles.feedback}>
                 {session.fb === 'ok' ? (
                   <>
@@ -329,9 +314,6 @@ export function GameScreen({ session, onSessionChange, onEnd }: Props) {
               autoCapitalize="none"
               spellCheck={false}
               onSubmitEditing={session.fb === null ? onSubmit : skipWait}
-              onFocus={() =>
-                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
-              }
               returnKeyType="done"
               blurOnSubmit={false}
             />
@@ -350,7 +332,7 @@ export function GameScreen({ session, onSessionChange, onEnd }: Props) {
                 }`
               : 'Toque na carta para continuar'}
           </Text>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
       <Toast message={toast?.msg ?? null} color={toast?.color} />
     </SafeAreaView>
@@ -363,25 +345,32 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    gap: 6,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  logo: { fontSize: 14 },
+  backBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backText: { fontSize: 20, color: colors.accent, fontWeight: '700' },
+  logo: { flex: 1, fontSize: 13 },
   logoName: { fontWeight: '800', color: colors.accent },
-  hud: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hud: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   badge: {
     backgroundColor: colors.badgeBg,
     borderWidth: 1,
     borderColor: colors.badgeBorder,
     borderRadius: 99,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   badgeHot: { backgroundColor: '#ffe8d0', borderColor: '#e07020' },
-  badgeText: { fontSize: 12, fontWeight: '700', color: colors.gold },
+  badgeText: { fontSize: 11, fontWeight: '700', color: colors.gold },
   progWrap: {
     height: 5,
     backgroundColor: colors.progTrack,
@@ -404,23 +393,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 4,
-    paddingBottom: 6,
+    paddingBottom: 8,
   },
   heart: { fontSize: 18 },
   heartLost: { opacity: 0.2 },
-  playArea: {
+  playTop: {
     paddingHorizontal: 14,
-    paddingTop: 4,
-    paddingBottom: 24,
-    flexGrow: 1,
+    paddingTop: 2,
   },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: radii.card,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginBottom: 10,
   },
   cardOk: { borderColor: colors.green },
@@ -431,7 +418,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   catBadge: {
     borderWidth: 1,
@@ -453,40 +440,40 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   ptWord: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.text,
     letterSpacing: -0.5,
   },
   feedback: {
-    marginTop: 8,
-    minHeight: 22,
+    marginTop: 6,
+    minHeight: 20,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
   },
-  fbOk: { fontSize: 17, fontWeight: '800', color: colors.green },
+  fbOk: { fontSize: 16, fontWeight: '800', color: colors.green },
   fbWrong: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.red,
     textDecorationLine: 'line-through',
     opacity: 0.8,
   },
   fbArrow: { color: colors.dim, fontSize: 13 },
-  fbCorrect: { fontSize: 18, fontWeight: '800', color: colors.green },
+  fbCorrect: { fontSize: 17, fontWeight: '800', color: colors.green },
   example: {
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    marginTop: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     backgroundColor: '#fff8ed',
     borderLeftWidth: 3,
     borderLeftColor: colors.accent,
     borderRadius: 8,
   },
-  exampleText: { fontSize: 12, color: colors.muted, lineHeight: 18 },
+  exampleText: { fontSize: 11, color: colors.muted, lineHeight: 16 },
   exampleEm: { color: colors.accent, fontWeight: '700' },
-  inputWrap: { flexDirection: 'row', gap: 8, marginBottom: 5 },
+  inputWrap: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   input: {
     flex: 1,
     minHeight: 48,
@@ -514,6 +501,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.dim,
     fontStyle: 'italic',
-    marginBottom: 8,
   },
 });
