@@ -22,6 +22,7 @@ type Props = {
 
 type Mode = 'summary' | 'review';
 
+/** Full mistake review carousel — verify marker: REVIEW_ALL_V2 */
 export function EndScreen({ session, onRestart, onMenu }: Props) {
   const [mode, setMode] = useState<Mode>('summary');
   const [reviewIdx, setReviewIdx] = useState(0);
