@@ -65,14 +65,19 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
   }, []);
 
   useEffect(() => {
-    if (session.fb === null) {
-      const pre = prefixChar(session.deck[session.idx]);
-      setAnswer(pre);
-      const t = setTimeout(() => inputRef.current?.focus(), 200);
-      return () => clearTimeout(t);
-    }
+    if (session.fb !== null) return;
+    const pre = prefixChar(session.deck[session.idx]);
+    setAnswer(pre);
+    // Keep focus without dismissing the keyboard between cards
+    requestAnimationFrame(() => inputRef.current?.focus());
   }, [session.idx, session.fb]);
 
+  const keepKeyboard = () => {
+    // Re-focus if Android steals focus during feedback / re-render
+    if (!session.gameOver && !session.gameWon) {
+      inputRef.current?.focus();
+    }
+  };
   useEffect(() => {
     return () => {
       if (advTimer.current) clearTimeout(advTimer.current);
@@ -317,23 +322,35 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
                 session.fb === 'err' && styles.inputErr,
               ]}
               value={answer}
-              onChangeText={setAnswer}
-              editable={session.fb === null}
+              onChangeText={(t) => {
+                if (session.fb !== null) return;
+                setAnswer(t);
+              }}
+              editable
+              showSoftInputOnFocus
               placeholder="en castellano…"
               placeholderTextColor={colors.dim}
               autoCorrect={false}
               autoCapitalize="none"
               spellCheck={false}
-              onSubmitEditing={session.fb === null ? onSubmit : skipWait}
+              onSubmitEditing={() => {
+                if (session.fb === null) onSubmit();
+                else skipWait();
+              }}
+              onBlur={keepKeyboard}
               returnKeyType="done"
               blurOnSubmit={false}
+              caretHidden={session.fb !== null}
             />
             <Pressable
-              onPress={onSubmit}
-              disabled={session.fb !== null}
-              style={[styles.btn, session.fb !== null && { opacity: 0.38 }]}
+              onPress={() => {
+                if (session.fb === null) onSubmit();
+                else skipWait();
+                keepKeyboard();
+              }}
+              style={styles.btn}
             >
-              <Text style={styles.btnText}>OK</Text>
+              <Text style={styles.btnText}>{session.fb === null ? 'OK' : '→'}</Text>
             </Pressable>
           </View>
           <Text style={styles.hint}>
