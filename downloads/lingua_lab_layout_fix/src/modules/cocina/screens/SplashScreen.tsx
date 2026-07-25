@@ -73,7 +73,7 @@ export function SplashScreen({ onStart }: Props) {
     onStart(selected);
   };
 
-  const catWidth = `${100 / COLS - 1.2}%` as `${number}%`;
+  const catWidth = `${(100 / COLS).toFixed(2)}%`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
