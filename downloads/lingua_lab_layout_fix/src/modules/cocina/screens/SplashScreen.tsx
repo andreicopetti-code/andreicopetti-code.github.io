@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -7,7 +8,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ALL_CATEGORIES, CAT_ICON, CC, CHEF_LEVELS, colors } from '../theme';
+import { CAT_IMAGE, ORBE_WIZARD } from '../images';
+import { ALL_CATEGORIES, CC, CHEF_LEVELS, colors } from '../theme';
 import { ITEMS } from '../lib/game';
 import { categoryProgress, chefLevelProgress, getChefLevel } from '../lib/srs';
 import {
@@ -25,12 +27,15 @@ type Props = {
 
 const COLS = 2;
 
+/** ART_ASSETS_V1 + GRID_EQUAL_V3 */
 export function SplashScreen({ onStart }: Props) {
   const { height, width } = useWindowDimensions();
   const short = height < 720;
   const gap = 8;
   const side = 16;
   const cellW = (Math.min(width, 480) - side * 2 - gap * (COLS - 1)) / COLS;
+  const cellH = short ? 52 : 56;
+  const wizardSize = short ? 72 : 96;
 
   const [selected, setSelected] = useState<string[]>(ALL_CATEGORIES);
   const [chef, setChef] = useState<ChefData>({ consolidated: 0, achievements: [] });
@@ -62,7 +67,6 @@ export function SplashScreen({ onStart }: Props) {
   const nextLv = CHEF_LEVELS[lv.idx + 1] ?? null;
   const record = ranking[0] || null;
 
-  /** Pad to full rows so the last line stays aligned */
   const gridItems = useMemo(() => {
     const pad = (COLS - (ALL_CATEGORIES.length % COLS)) % COLS;
     return [...ALL_CATEGORIES, ...Array.from({ length: pad }, () => null)];
@@ -85,9 +89,14 @@ export function SplashScreen({ onStart }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.pad}>
-        <View style={[styles.hero, short && { marginBottom: 8 }]}>
+        <View style={[styles.hero, short && { marginBottom: 6 }]}>
+          <Image
+            source={ORBE_WIZARD}
+            style={{ width: wizardSize, height: wizardSize, marginBottom: 4 }}
+            resizeMode="contain"
+          />
           <Text style={styles.orbe}>ORBE</Text>
-          <Text style={[styles.title, short && { fontSize: 26, lineHeight: 30 }]}>
+          <Text style={[styles.title, short && { fontSize: 24, lineHeight: 28 }]}>
             La Cocina Porteña
           </Text>
           <Text style={styles.subtitle}>Espanhol rioplatense · gastronomia</Text>
@@ -133,22 +142,25 @@ export function SplashScreen({ onStart }: Props) {
         <View style={styles.grid}>
           {gridItems.map((c, i) => {
             if (!c) {
-              return <View key={`pad-${i}`} style={{ width: cellW, height: short ? 44 : 48 }} />;
+              return <View key={`pad-${i}`} style={{ width: cellW, height: cellH }} />;
             }
             const col = CC[c];
             const sel = selected.includes(c);
             const { done, total } = categoryProgress(ITEMS, c, srs);
+            const img = CAT_IMAGE[c];
             return (
               <Pressable
                 key={c}
                 onPress={() => toggle(c)}
                 style={[
                   styles.cell,
-                  { width: cellW, height: short ? 44 : 48 },
+                  { width: cellW, height: cellH },
                   sel && { backgroundColor: col.bg, borderColor: col.b },
                 ]}
               >
-                <Text style={styles.cellIcon}>{CAT_ICON[c]}</Text>
+                {img ? (
+                  <Image source={img} style={styles.cellImg} resizeMode="contain" />
+                ) : null}
                 <Text
                   style={[styles.cellLabel, sel && { color: col.c }]}
                   numberOfLines={1}
@@ -183,29 +195,34 @@ const styles = StyleSheet.create({
   pad: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 8,
   },
-  hero: { marginBottom: 12 },
+  hero: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   orbe: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 3,
-    color: colors.dim,
-    marginBottom: 4,
+    letterSpacing: 4,
+    color: colors.accent,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.accent,
     letterSpacing: -0.7,
-    lineHeight: 34,
+    lineHeight: 32,
+    textAlign: 'center',
   },
   subtitle: {
-    marginTop: 4,
-    fontSize: 13,
+    marginTop: 2,
+    fontSize: 12,
     color: colors.muted,
     fontWeight: '500',
+    textAlign: 'center',
   },
   stats: {
     flexDirection: 'row',
@@ -216,7 +233,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   statBlock: { flex: 1, gap: 2 },
   statDivider: {
@@ -266,10 +283,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.white,
     borderRadius: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     gap: 6,
   },
-  cellIcon: { fontSize: 14, width: 18, textAlign: 'center' },
+  cellImg: { width: 28, height: 28 },
   cellLabel: {
     flex: 1,
     fontSize: 12,
@@ -285,7 +302,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: 'auto',
-    paddingTop: 10,
+    paddingTop: 8,
     gap: 6,
   },
   playBtn: {
