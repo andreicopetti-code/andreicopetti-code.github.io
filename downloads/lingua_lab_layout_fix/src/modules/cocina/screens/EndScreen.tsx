@@ -11,12 +11,8 @@ import { colors, radii } from '../theme';
 import { ITEMS } from '../lib/game';
 import { chefLevelProgress, getChefLevel } from '../lib/srs';
 import { speakES } from '../lib/speech';
-import {
-  addToRanking,
-  loadChef,
-  loadRanking,
-} from '../lib/storage';
-import type { ChefData, GameSession, RankingEntry } from '../types';
+import { addToRanking, loadChef, loadRanking } from '../lib/storage';
+import type { ChefData, GameSession, RankingEntry, VocabItem } from '../types';
 
 type Props = {
   session: GameSession;
@@ -24,7 +20,11 @@ type Props = {
   onMenu: () => void;
 };
 
+type Mode = 'summary' | 'review';
+
 export function EndScreen({ session, onRestart, onMenu }: Props) {
+  const [mode, setMode] = useState<Mode>('summary');
+  const [reviewIdx, setReviewIdx] = useState(0);
   const [chef, setChef] = useState<ChefData>({ consolidated: 0, achievements: [] });
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [name, setName] = useState('');
@@ -44,6 +44,17 @@ export function EndScreen({ session, onRestart, onMenu }: Props) {
   const prog = chefLevelProgress(chef.consolidated || 0);
   const isNewRecord = !prevRecord || session.score > prevRecord.pts;
 
+  const mistakes = useMemo(() => {
+    return Object.keys(session.sessionErrors || {})
+      .sort((a, b) => session.sessionErrors[b] - session.sessionErrors[a])
+      .map((pt) => {
+        const item = ITEMS.find((x) => x.pt === pt);
+        if (!item) return null;
+        return { item, times: session.sessionErrors[pt] };
+      })
+      .filter(Boolean) as { item: VocabItem; times: number }[];
+  }, [session.sessionErrors]);
+
   const topAchievement = useMemo(() => {
     if (session.bestStreak >= 10) return '🔥 Racha de 10+';
     if (session.totalErrors === 0) return '🏅 Sem erros!';
@@ -51,15 +62,6 @@ export function EndScreen({ session, onRestart, onMenu }: Props) {
     if (session.sessionConsolidated >= 5) return '📚 5 consolidadas';
     return null;
   }, [session]);
-
-  const review = useMemo(() => {
-    const keys = Object.keys(session.sessionErrors || {})
-      .sort((a, b) => session.sessionErrors[b] - session.sessionErrors[a])
-      .slice(0, 2);
-    return keys
-      .map((pt) => ITEMS.find((x) => x.pt === pt))
-      .filter(Boolean) as typeof ITEMS;
-  }, [session.sessionErrors]);
 
   const saveScore = async () => {
     if (!name.trim()) return;
@@ -70,16 +72,93 @@ export function EndScreen({ session, onRestart, onMenu }: Props) {
 
   const top3 = ranking.slice(0, 3);
   const medals = ['🥇', '🥈', '🥉'];
+  const current = mistakes[reviewIdx];
+
+  if (mode === 'review' && mistakes.length > 0) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <Pressable onPress={() => setMode('summary')} hitSlop={10}>
+            <Text style={styles.headerLink}>← Resumo</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>Revisão</Text>
+          <Text style={styles.headerCount}>
+            {reviewIdx + 1}/{mistakes.length}
+          </Text>
+        </View>
+
+        <View style={styles.reviewBody}>
+          <Text style={styles.reviewKicker}>
+            Errou {current.times}x nesta partida
+          </Text>
+          <View style={styles.reviewCard}>
+            <Text style={styles.reviewPt}>{current.item.pt}</Text>
+            <Text style={styles.reviewArrow}>↓</Text>
+            <Text style={styles.reviewEs}>{current.item.es[0]}</Text>
+            {current.item.es.length > 1 ? (
+              <Text style={styles.reviewAlts}>
+                também: {current.item.es.slice(1, 3).join(', ')}
+              </Text>
+            ) : null}
+          </View>
+
+          <Pressable
+            style={styles.speakBtn}
+            onPress={() => speakES(current.item.es[0], true, true)}
+          >
+            <Text style={styles.speakText}>Ouvir pronúncia 🔊</Text>
+          </Pressable>
+
+          <View style={styles.dots}>
+            {mistakes.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, i === reviewIdx && styles.dotActive]}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.navRow}>
+            <Pressable
+              style={[styles.navBtn, reviewIdx === 0 && styles.navDisabled]}
+              disabled={reviewIdx === 0}
+              onPress={() => setReviewIdx((i) => Math.max(0, i - 1))}
+            >
+              <Text style={styles.navBtnText}>Anterior</Text>
+            </Pressable>
+            {reviewIdx < mistakes.length - 1 ? (
+              <Pressable
+                style={[styles.navBtn, styles.navPrimary]}
+                onPress={() =>
+                  setReviewIdx((i) => Math.min(mistakes.length - 1, i + 1))
+                }
+              >
+                <Text style={[styles.navBtnText, styles.navPrimaryText]}>Próximo</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={[styles.navBtn, styles.navPrimary]}
+                onPress={() => setMode('summary')}
+              >
+                <Text style={[styles.navBtnText, styles.navPrimaryText]}>Concluir</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={onMenu} hitSlop={12} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+        <Pressable onPress={onMenu} hitSlop={10}>
+          <Text style={styles.headerLink}>← Menu</Text>
         </Pressable>
-        <Text style={styles.logo}>
-          👨‍🍳 <Text style={styles.logoName}>Cocina</Text>
-        </Text>
+        <Text style={styles.headerTitle}>Cocina</Text>
+        <View style={{ width: 52 }} />
       </View>
 
       <View style={styles.body}>
@@ -87,15 +166,12 @@ export function EndScreen({ session, onRestart, onMenu }: Props) {
         <Text style={styles.title}>
           {session.gameWon ? '¡Ganaste, bocho!' : '¡Perdiste, che!'}
         </Text>
-        <Text style={styles.sub} numberOfLines={2}>
+        <Text style={styles.sub}>
           {session.gameWon
-            ? `${session.origLen} cartas · ¡Sos un crak!`
-            : `Carta ${session.idx + 1} · intentá de nuevo`}
+            ? `${session.origLen} cartas`
+            : `Carta ${session.idx + 1}`}
+          {isNewRecord ? ` · recorde ${session.score}` : ''}
         </Text>
-
-        {isNewRecord ? (
-          <Text style={styles.recordBanner}>🏆 Novo recorde · {session.score}</Text>
-        ) : null}
 
         <View style={styles.stats}>
           <Stat n={session.score} l="ok" />
@@ -114,28 +190,26 @@ export function EndScreen({ session, onRestart, onMenu }: Props) {
           <Text style={styles.chefPts}>{chef.consolidated || 0}</Text>
         </View>
 
-        {topAchievement ? (
-          <Text style={styles.achPill}>{topAchievement}</Text>
-        ) : null}
+        {topAchievement ? <Text style={styles.achPill}>{topAchievement}</Text> : null}
 
-        {review.length ? (
-          <View style={styles.reviewRow}>
-            {review.map((it) => (
-              <Pressable
-                key={it.pt}
-                style={styles.chip}
-                onPress={() => speakES(it.es[0], true, true)}
-              >
-                <Text style={styles.chipText} numberOfLines={1}>
-                  {it.pt} → <Text style={{ color: colors.green }}>{it.es[0]}</Text> 🔊
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+        {mistakes.length > 0 ? (
+          <Pressable
+            style={styles.reviewCta}
+            onPress={() => {
+              setReviewIdx(0);
+              setMode('review');
+            }}
+          >
+            <Text style={styles.reviewCtaText}>
+              Revisar {mistakes.length} erro{mistakes.length > 1 ? 's' : ''} →
+            </Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.noErrors}>Nenhum erro para revisar</Text>
+        )}
 
         <View style={styles.ranking}>
-          <Text style={styles.rankingTitle}>🏆 Top 3</Text>
+          <Text style={styles.rankingTitle}>Top 3</Text>
           {top3.length === 0 ? (
             <Text style={styles.emptyRank}>Nenhum ranking ainda</Text>
           ) : (
@@ -196,25 +270,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: colors.badgeBg,
-    borderWidth: 1,
-    borderColor: colors.badgeBorder,
-  },
-  backText: { fontSize: 18, color: colors.accent, fontWeight: '700' },
-  logo: { fontSize: 14 },
-  logoName: { fontWeight: '800', color: colors.accent },
+  headerLink: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  headerTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
+  headerCount: { fontSize: 12, fontWeight: '700', color: colors.muted, minWidth: 40, textAlign: 'right' },
   body: {
     flex: 1,
     paddingHorizontal: 14,
@@ -223,21 +287,9 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 0,
   },
-  em: { fontSize: 40, lineHeight: 48 },
+  em: { fontSize: 36, lineHeight: 42 },
   title: { fontSize: 22, fontWeight: '800', color: colors.accent },
   sub: { fontSize: 12, color: colors.muted, textAlign: 'center' },
-  recordBanner: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.gold,
-    backgroundColor: '#fffbe6',
-    borderWidth: 1,
-    borderColor: '#f0c040',
-    borderRadius: 99,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    overflow: 'hidden',
-  },
   stats: { flexDirection: 'row', gap: 6, marginTop: 2 },
   stat: {
     alignItems: 'center',
@@ -290,17 +342,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     overflow: 'hidden',
   },
-  reviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'center' },
-  chip: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 99,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    maxWidth: '48%',
+  reviewCta: {
+    width: '100%',
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    backgroundColor: '#fff8ed',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
   },
-  chipText: { fontSize: 10, color: colors.text },
+  reviewCtaText: { fontSize: 13, fontWeight: '800', color: colors.accent },
+  noErrors: { fontSize: 12, color: colors.dim },
   ranking: {
     width: '100%',
     backgroundColor: colors.white,
@@ -323,7 +375,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 3,
+    paddingVertical: 2,
   },
   rankPos: { fontSize: 14, width: 22, textAlign: 'center' },
   rankName: { flex: 1, fontWeight: '700', color: colors.text, fontSize: 12 },
@@ -379,4 +431,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuText: { color: colors.muted, fontSize: 14, fontWeight: '700' },
+  reviewBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 14,
+  },
+  reviewKicker: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  reviewCard: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 18,
+    paddingVertical: 24,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    gap: 8,
+  },
+  reviewPt: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  reviewArrow: { fontSize: 16, color: colors.dim },
+  reviewEs: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.green,
+    textAlign: 'center',
+  },
+  reviewAlts: { fontSize: 12, color: colors.muted },
+  speakBtn: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
+  speakText: { fontSize: 14, fontWeight: '700', color: colors.text },
+  dots: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, justifyContent: 'center' },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 99,
+    backgroundColor: colors.progTrack,
+  },
+  dotActive: { backgroundColor: colors.accent, width: 16 },
+  navRow: { flexDirection: 'row', gap: 8 },
+  navBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  navDisabled: { opacity: 0.35 },
+  navPrimary: { backgroundColor: colors.accent, borderColor: colors.accent },
+  navBtnText: { fontSize: 14, fontWeight: '800', color: colors.text },
+  navPrimaryText: { color: '#fff' },
 });
