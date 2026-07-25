@@ -206,9 +206,6 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Pressable onPress={confirmExit} hitSlop={12} style={styles.backBtn}>
-            <Text style={styles.backText}>←</Text>
-          </Pressable>
           <Text style={styles.logo} numberOfLines={1}>
             👨‍🍳 <Text style={styles.logoName}>Cocina</Text>
           </Text>
@@ -222,6 +219,9 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{session.score}</Text>
             </View>
+            <Pressable onPress={confirmExit} hitSlop={10} style={styles.exitLink}>
+              <Text style={styles.exitText}>Sair</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -355,22 +355,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: colors.badgeBg,
-    borderWidth: 1,
-    borderColor: colors.badgeBorder,
-  },
-  backText: { fontSize: 18, color: colors.accent, fontWeight: '700' },
   logo: { flex: 1, fontSize: 13 },
   logoName: { fontWeight: '800', color: colors.accent },
   hud: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -384,6 +373,17 @@ const styles = StyleSheet.create({
   },
   badgeHot: { backgroundColor: '#ffe8d0', borderColor: '#e07020' },
   badgeText: { fontSize: 11, fontWeight: '700', color: colors.gold },
+  exitLink: {
+    marginLeft: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  exitText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+    textDecorationLine: 'underline',
+  },
   progWrap: {
     height: 5,
     backgroundColor: colors.progTrack,

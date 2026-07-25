@@ -23,11 +23,10 @@ type Props = {
   onStart: (cats: string[]) => void;
 };
 
-const COLS = 3;
-
 export function SplashScreen({ onStart }: Props) {
-  const { height } = useWindowDimensions();
-  const compact = height < 740;
+  const { height, width } = useWindowDimensions();
+  const short = height < 720;
+  const chipMaxW = Math.min(width - 28, 420);
 
   const [selected, setSelected] = useState<string[]>(ALL_CATEGORIES);
   const [chef, setChef] = useState<ChefData>({ consolidated: 0, achievements: [] });
@@ -73,87 +72,93 @@ export function SplashScreen({ onStart }: Props) {
     onStart(selected);
   };
 
-  const catWidth = `${(100 / COLS).toFixed(2)}%`;
-
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={[styles.header, compact && styles.headerCompact]}>
-        <Text style={styles.brand}>ORBE</Text>
-        <Text style={styles.logo}>
-          👨‍🍳 <Text style={styles.logoName}>La Cocina Porteña</Text>
-        </Text>
-        <Text style={styles.lang}>ES · Rioplatense</Text>
+      <View style={[styles.atmosphere, short && { opacity: 0.5 }]} />
+
+      <View style={styles.top}>
+        <Text style={styles.orbe}>ORBE</Text>
+        <Text style={[styles.title, short && { fontSize: 28 }]}>La Cocina Porteña</Text>
+        <Text style={styles.subtitle}>Vocabulário do espanhol rioplatense</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaPill}>ES</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaText}>gastronomia</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaText}>áudio</Text>
+        </View>
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.statsRow}>
-          <View style={[styles.statChip, !record && { opacity: 0.55 }]}>
-            <Text style={styles.statLabel}>🏅 Recorde</Text>
-            <Text style={styles.statValue} numberOfLines={1}>
-              {record ? `${record.name} · ${record.pts}` : '—'}
-            </Text>
+      <View style={styles.progressCard}>
+        <View style={styles.progressLeft}>
+          <Text style={styles.progressKicker}>Nível</Text>
+          <Text style={styles.progressName}>
+            {lv.icon} {lv.name}
+          </Text>
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${Math.round(prog * 100)}%` }]} />
           </View>
-          <View style={styles.statChip}>
-            <Text style={styles.statLabel}>
-              {lv.icon} {lv.name}
-            </Text>
-            <View style={styles.bar}>
-              <View style={[styles.fill, { width: `${Math.round(prog * 100)}%` }]} />
-            </View>
-            <Text style={styles.statMeta}>
-              {chef.consolidated || 0}
-              {nextLv ? ` → ${nextLv.min}` : ''}
-            </Text>
-          </View>
+          <Text style={styles.progressMeta}>
+            {chef.consolidated || 0} palavras
+            {nextLv ? ` · próximo ${nextLv.min}` : ''}
+          </Text>
         </View>
+        <View style={styles.progressRight}>
+          <Text style={styles.progressKicker}>Recorde</Text>
+          <Text style={styles.recordPts}>{record ? record.pts : '—'}</Text>
+          <Text style={styles.recordName} numberOfLines={1}>
+            {record?.name || 'ainda sem nome'}
+          </Text>
+        </View>
+      </View>
 
+      <View style={styles.catBlock}>
         <View style={styles.catHeader}>
-          <Text style={styles.catTitle}>Categorias</Text>
+          <Text style={styles.catTitle}>Escolha o cardápio</Text>
           <View style={styles.selectRow}>
-            <Pressable onPress={() => setAll(true)} style={styles.miniBtn}>
-              <Text style={styles.miniBtnText}>Todas</Text>
+            <Pressable onPress={() => setAll(true)} hitSlop={8}>
+              <Text style={styles.linkBtn}>Todas</Text>
             </Pressable>
-            <Pressable onPress={() => setAll(false)} style={styles.miniBtn}>
-              <Text style={styles.miniBtnText}>Nenhuma</Text>
+            <Text style={styles.metaDot}>|</Text>
+            <Pressable onPress={() => setAll(false)} hitSlop={8}>
+              <Text style={styles.linkBtn}>Limpar</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={styles.catGrid}>
+        <View style={[styles.chipWrap, { maxWidth: chipMaxW }]}>
           {ALL_CATEGORIES.map((c) => {
             const col = CC[c];
             const sel = selected.includes(c);
-            const { done, total, pct } = categoryProgress(ITEMS, c, srs);
+            const { done, total } = categoryProgress(ITEMS, c, srs);
             return (
               <Pressable
                 key={c}
                 onPress={() => toggle(c)}
                 style={[
-                  styles.catToggle,
-                  { width: catWidth },
-                  compact && styles.catToggleCompact,
-                  sel && { borderColor: col.b, backgroundColor: col.bg },
+                  styles.chip,
+                  short && styles.chipShort,
+                  sel && {
+                    backgroundColor: col.bg,
+                    borderColor: col.b,
+                  },
                 ]}
               >
+                <Text style={styles.chipIcon}>{CAT_ICON[c]}</Text>
                 <Text
-                  style={[styles.catIcon, sel && { color: col.c }]}
-                  numberOfLines={1}
-                >
-                  {CAT_ICON[c]}
-                </Text>
-                <Text
-                  style={[styles.catLabel, sel && { color: col.c }]}
+                  style={[styles.chipLabel, sel && { color: col.c }]}
                   numberOfLines={1}
                 >
                   {c}
                 </Text>
-                <Text style={styles.catCount}>
-                  {done > 0 ? `${done}/` : ''}
-                  {total}
-                </Text>
-                <View style={styles.miniBar}>
-                  <View style={[styles.miniFill, { width: `${pct}%` }]} />
-                </View>
+                {sel ? (
+                  <Text style={[styles.chipCheck, { color: col.c }]}>✓</Text>
+                ) : (
+                  <Text style={styles.chipCount}>
+                    {done > 0 ? `${done}/` : ''}
+                    {total}
+                  </Text>
+                )}
               </Pressable>
             );
           })}
@@ -164,133 +169,194 @@ export function SplashScreen({ onStart }: Props) {
         <Pressable
           onPress={handlePlay}
           disabled={!wordCount}
-          style={[styles.playBtn, !wordCount && { opacity: 0.45 }]}
+          style={[styles.playBtn, !wordCount && styles.playDisabled]}
         >
-          <Text style={styles.playText}>¡A jugar! 🍽</Text>
+          <Text style={styles.playText}>¡A jugar!</Text>
         </Pressable>
-        <Text style={styles.info}>{wordCount} palavras · 5 vidas</Text>
+        <Text style={styles.footerHint}>
+          {wordCount} palavras · 5 vidas · rachas recuperam vidas
+        </Text>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    paddingHorizontal: 14,
-    paddingTop: 4,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 2,
+  safe: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 16,
   },
-  headerCompact: { paddingBottom: 6 },
-  brand: {
-    fontSize: 10,
+  atmosphere: {
+    position: 'absolute',
+    top: -40,
+    left: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 220,
+    backgroundColor: 'rgba(201,106,32,0.08)',
+  },
+  top: {
+    paddingTop: 10,
+    paddingBottom: 10,
+    alignItems: 'flex-start',
+  },
+  orbe: {
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 2,
+    letterSpacing: 3,
     color: colors.dim,
+    marginBottom: 6,
   },
-  logo: { fontSize: 16 },
-  logoName: { fontWeight: '800', color: colors.accent },
-  lang: { fontSize: 11, color: colors.muted, fontWeight: '600' },
-  body: {
-    flex: 1,
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    minHeight: 0,
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.accent,
+    letterSpacing: -0.8,
+    lineHeight: 36,
   },
-  statsRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  statChip: {
-    flex: 1,
-    backgroundColor: '#fff8ed',
-    borderWidth: 1.5,
-    borderColor: '#f0c070',
-    borderRadius: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    gap: 2,
+  subtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: colors.muted,
+    fontWeight: '500',
   },
-  statLabel: { fontSize: 10, fontWeight: '700', color: colors.gold },
-  statValue: { fontSize: 11, fontWeight: '700', color: colors.text },
-  statMeta: { fontSize: 10, color: colors.muted },
-  bar: { height: 4, backgroundColor: colors.progTrack, borderRadius: 99, overflow: 'hidden' },
-  fill: { height: '100%', backgroundColor: colors.accent, borderRadius: 99 },
-  catHeader: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingHorizontal: 2,
+    marginTop: 8,
+    gap: 6,
   },
-  catTitle: {
-    fontSize: 11,
+  metaPill: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.accent,
+    backgroundColor: '#fff4e0',
+    borderWidth: 1,
+    borderColor: '#f0c070',
+    overflow: 'hidden',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  metaDot: { color: colors.dim, fontSize: 12 },
+  metaText: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  progressCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 12,
+    marginBottom: 12,
+  },
+  progressLeft: { flex: 1.4, gap: 3 },
+  progressRight: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    paddingLeft: 12,
+    justifyContent: 'center',
+  },
+  progressKicker: {
+    fontSize: 10,
     fontWeight: '700',
-    color: colors.muted,
+    color: colors.dim,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  selectRow: { flexDirection: 'row', gap: 6 },
-  miniBtn: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  miniBtnText: { fontSize: 10, fontWeight: '700', color: colors.muted },
-  catGrid: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignContent: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 5,
-    minHeight: 0,
-  },
-  catToggle: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    gap: 2,
-  },
-  catToggleCompact: { paddingVertical: 4 },
-  catIcon: { fontSize: 14 },
-  catLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+  progressName: {
+    fontSize: 14,
+    fontWeight: '800',
     color: colors.text,
-    textAlign: 'center',
   },
-  catCount: { fontSize: 9, color: colors.dim },
-  miniBar: {
-    width: '100%',
-    height: 3,
-    backgroundColor: 'rgba(0,0,0,0.08)',
+  barTrack: {
+    height: 4,
+    backgroundColor: colors.progTrack,
     borderRadius: 99,
     overflow: 'hidden',
     marginTop: 2,
   },
-  miniFill: { height: '100%', backgroundColor: colors.green, borderRadius: 99 },
+  barFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 99 },
+  progressMeta: { fontSize: 11, color: colors.muted, marginTop: 2 },
+  recordPts: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.accent,
+    letterSpacing: -0.5,
+  },
+  recordName: { fontSize: 11, color: colors.muted, fontWeight: '600' },
+  catBlock: { flex: 1, minHeight: 0 },
+  catHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  catTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  selectRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  linkBtn: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.accent,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignContent: 'flex-start',
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+  chipShort: {
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+  },
+  chipIcon: { fontSize: 13 },
+  chipLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+    maxWidth: 92,
+  },
+  chipCount: { fontSize: 10, color: colors.dim, fontWeight: '600' },
+  chipCheck: { fontSize: 11, fontWeight: '800' },
   footer: {
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: 4,
+    paddingTop: 10,
+    paddingBottom: 6,
+    gap: 6,
   },
   playBtn: {
     backgroundColor: colors.accent,
     borderRadius: 14,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  playText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  info: { fontSize: 10, color: colors.dim, textAlign: 'center' },
+  playDisabled: { opacity: 0.4 },
+  playText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  footerHint: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: colors.dim,
+  },
 });
