@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -8,8 +7,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CAT_IMAGE, ORBE_WIZARD } from '../images';
-import { ALL_CATEGORIES, CC, CHEF_LEVELS, colors } from '../theme';
+import { ALL_CATEGORIES, CAT_ICON, CC, CHEF_LEVELS, colors } from '../theme';
 import { ITEMS } from '../lib/game';
 import { categoryProgress, chefLevelProgress, getChefLevel } from '../lib/srs';
 import {
@@ -29,16 +27,14 @@ const COLS = 2;
 const GAP = 6;
 const SIDE = 14;
 
-/** SPLASH_COMPACT_V1 — no overlap; light art; vegetais + frases úteis */
+/** SPLASH_STABLE_V1 — emoji icons (no PNG require) to avoid Expo blue screen */
 export function SplashScreen({ onStart }: Props) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const contentW = Math.min(width, 480) - SIDE * 2;
   const cellW = (contentW - GAP * (COLS - 1)) / COLS;
 
-  // Reserve vertical space so grid never sits under the CTA
-  const wizardSize = height < 700 ? 52 : 64;
-  const heroBlock = wizardSize + 58; // image + ORBE + title + subtitle
+  const heroBlock = 78;
   const statsBlock = 54;
   const catHeadBlock = 28;
   const footerBlock = 72;
@@ -101,11 +97,7 @@ export function SplashScreen({ onStart }: Props) {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.pad}>
         <View style={styles.hero}>
-          <Image
-            source={ORBE_WIZARD}
-            style={{ width: wizardSize, height: wizardSize }}
-            resizeMode="contain"
-          />
+          <Text style={styles.wizardEmoji}>🧙</Text>
           <Text style={styles.orbe}>ORBE</Text>
           <Text style={styles.title}>La Cocina Porteña</Text>
           <Text style={styles.subtitle}>Espanhol rioplatense · gastronomia</Text>
@@ -156,7 +148,6 @@ export function SplashScreen({ onStart }: Props) {
             const col = CC[c];
             const sel = selected.includes(c);
             const { done, total } = categoryProgress(ITEMS, c, srs);
-            const img = CAT_IMAGE[c];
             return (
               <Pressable
                 key={c}
@@ -167,11 +158,7 @@ export function SplashScreen({ onStart }: Props) {
                   sel && { backgroundColor: col.bg, borderColor: col.b },
                 ]}
               >
-                {img ? (
-                  <Image source={img} style={styles.cellImg} resizeMode="contain" />
-                ) : (
-                  <Text style={styles.cellEmoji}>{/* fallback unused */}</Text>
-                )}
+                <Text style={styles.cellIcon}>{CAT_ICON[c] || '•'}</Text>
                 <Text
                   style={[styles.cellLabel, sel && { color: col.c }]}
                   numberOfLines={1}
@@ -213,6 +200,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  wizardEmoji: { fontSize: 40, lineHeight: 44 },
   orbe: {
     marginTop: 2,
     fontSize: 11,
@@ -299,8 +287,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     gap: 5,
   },
-  cellImg: { width: 22, height: 22 },
-  cellEmoji: { width: 0 },
+  cellIcon: { fontSize: 14, width: 20, textAlign: 'center' },
   cellLabel: {
     flex: 1,
     fontSize: 11,

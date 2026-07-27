@@ -3,7 +3,6 @@ import {
   Alert,
   Animated,
   BackHandler,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CAT_IMAGE } from '../images';
 import { CAT_ICON, CC, MAX_LIVES, colors, radii } from '../theme';
 import { getExampleParts } from '../lib/examples';
 import { advance, markGameOver, submitAnswer } from '../lib/game';
@@ -93,7 +91,6 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
 
   const col = CC[cur.cat] || CC.alimentos;
   const icon = CAT_ICON[cur.cat] || '🍽';
-  const catImg = CAT_IMAGE[cur.cat];
   const pct = Math.min(Math.round((session.idx / Math.max(session.origLen, 1)) * 100), 100);
   const retryCount = session.deck
     .slice(session.idx)
@@ -271,12 +268,8 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
                     { backgroundColor: col.bg, borderColor: col.b },
                   ]}
                 >
-                  {catImg ? (
-                    <Image source={catImg} style={{ width: 16, height: 16 }} resizeMode="contain" />
-                  ) : null}
                   <Text style={{ color: col.c, fontSize: 10, fontWeight: '700' }}>
-                    {catImg ? '' : `${icon} `}
-                    {cur.cat.toUpperCase()}
+                    {icon} {cur.cat.toUpperCase()}
                   </Text>
                 </View>
                 {cur.immediateRetry ? (
