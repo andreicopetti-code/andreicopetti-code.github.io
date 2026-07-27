@@ -44,13 +44,15 @@ export function GameScreen({ session, onSessionChange, onEnd, onExit }: Props) {
   const shake = useRef(new Animated.Value(0)).current;
 
   const confirmExit = () => {
+    if (!onExit) return;
     Alert.alert(
       'Sair da partida?',
       'O progresso desta sessão não será salvo no ranking.',
       [
         { text: 'Continuar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: onExit },
+        { text: 'Sair', style: 'destructive', onPress: () => onExit() },
       ],
+      { cancelable: true },
     );
   };
 

@@ -9,6 +9,7 @@ import { beginGame, createInitialSession } from './src/modules/cocina/lib/game';
 import { colors } from './src/modules/cocina/theme';
 import type { GameSession, Screen } from './src/modules/cocina/types';
 
+/** APP_EXIT_FIX_V1 — Sair volta ao menu */
 export default function App() {
   const [screen, setScreen] = useState<Screen>('splash');
   const [session, setSession] = useState<GameSession>(createInitialSession());

@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CAT_IMAGE, ORBE_WIZARD } from '../images';
 import { ALL_CATEGORIES, CC, CHEF_LEVELS, colors } from '../theme';
 import { ITEMS } from '../lib/game';
@@ -26,16 +26,27 @@ type Props = {
 };
 
 const COLS = 2;
+const GAP = 6;
+const SIDE = 14;
 
-/** ART_ASSETS_V1 + GRID_EQUAL_V3 */
+/** SPLASH_COMPACT_V1 — no overlap; light art; vegetais + frases úteis */
 export function SplashScreen({ onStart }: Props) {
   const { height, width } = useWindowDimensions();
-  const short = height < 720;
-  const gap = 8;
-  const side = 16;
-  const cellW = (Math.min(width, 480) - side * 2 - gap * (COLS - 1)) / COLS;
-  const cellH = short ? 52 : 56;
-  const wizardSize = short ? 72 : 96;
+  const insets = useSafeAreaInsets();
+  const contentW = Math.min(width, 480) - SIDE * 2;
+  const cellW = (contentW - GAP * (COLS - 1)) / COLS;
+
+  // Reserve vertical space so grid never sits under the CTA
+  const wizardSize = height < 700 ? 52 : 64;
+  const heroBlock = wizardSize + 58; // image + ORBE + title + subtitle
+  const statsBlock = 54;
+  const catHeadBlock = 28;
+  const footerBlock = 72;
+  const verticalChrome =
+    insets.top + insets.bottom + 8 + heroBlock + statsBlock + catHeadBlock + footerBlock + 12;
+  const rows = Math.ceil(ALL_CATEGORIES.length / COLS);
+  const gridAvail = Math.max(160, height - verticalChrome);
+  const cellH = Math.max(34, Math.min(42, Math.floor((gridAvail - GAP * (rows - 1)) / rows)));
 
   const [selected, setSelected] = useState<string[]>(ALL_CATEGORIES);
   const [chef, setChef] = useState<ChefData>({ consolidated: 0, achievements: [] });
@@ -89,23 +100,21 @@ export function SplashScreen({ onStart }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.pad}>
-        <View style={[styles.hero, short && { marginBottom: 6 }]}>
+        <View style={styles.hero}>
           <Image
             source={ORBE_WIZARD}
-            style={{ width: wizardSize, height: wizardSize, marginBottom: 4 }}
+            style={{ width: wizardSize, height: wizardSize }}
             resizeMode="contain"
           />
           <Text style={styles.orbe}>ORBE</Text>
-          <Text style={[styles.title, short && { fontSize: 24, lineHeight: 28 }]}>
-            La Cocina Porteña
-          </Text>
+          <Text style={styles.title}>La Cocina Porteña</Text>
           <Text style={styles.subtitle}>Espanhol rioplatense · gastronomia</Text>
         </View>
 
-        <View style={[styles.stats, short && { marginBottom: 8, paddingVertical: 8 }]}>
+        <View style={styles.stats}>
           <View style={styles.statBlock}>
             <Text style={styles.statLabel}>Nível</Text>
-            <Text style={styles.statValue}>
+            <Text style={styles.statValue} numberOfLines={1}>
               {lv.icon} {lv.name}
             </Text>
             <View style={styles.barTrack}>
@@ -160,7 +169,9 @@ export function SplashScreen({ onStart }: Props) {
               >
                 {img ? (
                   <Image source={img} style={styles.cellImg} resizeMode="contain" />
-                ) : null}
+                ) : (
+                  <Text style={styles.cellEmoji}>{/* fallback unused */}</Text>
+                )}
                 <Text
                   style={[styles.cellLabel, sel && { color: col.c }]}
                   numberOfLines={1}
@@ -194,87 +205,89 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   pad: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingHorizontal: SIDE,
+    paddingTop: 2,
+    paddingBottom: 4,
   },
   hero: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   orbe: {
-    fontSize: 12,
+    marginTop: 2,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 4,
+    letterSpacing: 3.5,
     color: colors.accent,
-    marginBottom: 2,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: colors.accent,
-    letterSpacing: -0.7,
-    lineHeight: 32,
+    letterSpacing: -0.6,
+    lineHeight: 28,
     textAlign: 'center',
   },
   subtitle: {
-    marginTop: 2,
-    fontSize: 12,
+    marginTop: 1,
+    fontSize: 11,
     color: colors.muted,
     fontWeight: '500',
     textAlign: 'center',
   },
   stats: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 10,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginBottom: 6,
+    minHeight: 48,
   },
-  statBlock: { flex: 1, gap: 2 },
+  statBlock: { flex: 1, gap: 1 },
   statDivider: {
     width: 1,
+    alignSelf: 'stretch',
     backgroundColor: colors.border,
-    marginHorizontal: 12,
+    marginHorizontal: 10,
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: colors.dim,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
-  statValue: { fontSize: 14, fontWeight: '800', color: colors.text },
-  recordPts: { fontSize: 22, fontWeight: '800', color: colors.accent },
+  statValue: { fontSize: 12, fontWeight: '800', color: colors.text },
+  recordPts: { fontSize: 18, fontWeight: '800', color: colors.accent, lineHeight: 20 },
   barTrack: {
-    height: 4,
+    height: 3,
     backgroundColor: colors.progTrack,
     borderRadius: 99,
     overflow: 'hidden',
-    marginVertical: 2,
+    marginVertical: 1,
   },
   barFill: { height: '100%', backgroundColor: colors.accent },
-  statMeta: { fontSize: 11, color: colors.muted },
+  statMeta: { fontSize: 10, color: colors.muted },
   catHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  catTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  catTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
   links: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   link: { fontSize: 12, fontWeight: '700', color: colors.accent },
   linkSep: { color: colors.dim },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    flex: 1,
-    alignContent: 'flex-start',
+    gap: GAP,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   cell: {
     flexDirection: 'row',
@@ -282,35 +295,36 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    gap: 5,
   },
-  cellImg: { width: 28, height: 28 },
+  cellImg: { width: 22, height: 22 },
+  cellEmoji: { width: 0 },
   cellLabel: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.text,
   },
   cellMeta: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.dim,
-    minWidth: 28,
+    minWidth: 24,
     textAlign: 'right',
   },
   footer: {
     marginTop: 'auto',
-    paddingTop: 8,
-    gap: 6,
+    paddingTop: 6,
+    gap: 4,
   },
   playBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  playText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  hint: { textAlign: 'center', fontSize: 11, color: colors.dim },
+  playText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  hint: { textAlign: 'center', fontSize: 10, color: colors.dim },
 });
