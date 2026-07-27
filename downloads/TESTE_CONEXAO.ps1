@@ -65,32 +65,46 @@ Write-Host "[5] npm install (1-2 minutos)..."
 npm install --silent
 if ($LASTEXITCODE -ne 0) { throw "npm install falhou" }
 
-# --- 6. Instrucoes ---
+# --- 6. Preparar celular ---
 Write-Host ""
 Write-Host "==================================================="
-Write-Host " ANTES DE ESCANEAR - faca estes 2 testes no celular"
+Write-Host " FACA AGORA NO CELULAR (antes de subir o servidor)"
 Write-Host "==================================================="
 Write-Host ""
-Write-Host " A) Wi-Fi: desligue os dados moveis (4G/5G) do celular."
-Write-Host "    O celular precisa estar na MESMA Wi-Fi do PC."
+Write-Host " 1) Desligue os DADOS MOVEIS (4G/5G)."
+Write-Host "    O celular tem que usar a MESMA Wi-Fi do PC."
+Write-Host ""
+Write-Host " 2) Configuracoes do Android > Apps > Expo Go >"
+Write-Host "    Armazenamento > Limpar cache."
+Write-Host ""
+Write-Host " 3) Feche o Expo Go (remova dos apps recentes)."
+Write-Host ""
+Write-Host "Pressione ENTER quando terminar os 3 passos..."
+Read-Host | Out-Null
+
+# --- 7. Subir servidor ---
+Write-Host ""
+Write-Host "==================================================="
+Write-Host " DEPOIS QUE O QR APARECER, NESTA ORDEM:"
+Write-Host "==================================================="
 Write-Host ""
 if ($mainIp) {
-  Write-Host " B) No NAVEGADOR do celular (Chrome), abra:"
+  Write-Host " A) No navegador do CELULAR (Chrome), abra:"
   Write-Host ""
   Write-Host ("       http://" + $mainIp + ":8081")
   Write-Host ""
-  Write-Host "    - Se aparecer texto/JSON  -> rede OK"
-  Write-Host "    - Se der erro / nao abrir -> FIREWALL ou rede (causa da tela azul)"
+  Write-Host "    Aparece texto/JSON  -> rede OK, siga para o B"
+  Write-Host "    Nao abre / da erro  -> FIREWALL ou rede = causa da tela azul"
+  Write-Host "                           (nao adianta escanear o QR)"
+  Write-Host ""
 }
+Write-Host " B) Abra o Expo Go e escaneie o QR desta janela."
+Write-Host "    Esperado: tela creme com 'ORBE / Conexao OK'"
 Write-Host ""
-Write-Host " C) No Expo Go: Configuracoes do Android > Apps > Expo Go >"
-Write-Host "    Armazenamento > Limpar cache."
+Write-Host " C) Olhe ESTA janela depois de escanear."
+Write-Host "    Se aparecer 'Android Bundled ...' -> o celular baixou o app."
+Write-Host "    Se nao aparecer NADA -> o celular nao chega no servidor."
 Write-Host ""
-Write-Host "Pressione ENTER para subir o servidor de teste..."
-Read-Host | Out-Null
-
-Write-Host ""
-Write-Host "[6] Subindo Expo do PROJETO DE TESTE..."
-Write-Host "    Esperado no celular: tela creme com 'ORBE / Conexao OK'"
+Write-Host "Subindo servidor..."
 Write-Host ""
 npx expo start -c
