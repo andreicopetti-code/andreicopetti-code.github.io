@@ -8,9 +8,9 @@ export type Category =
   | 'bebidas'
   | 'utensílios'
   | 'mercado'
+  | 'expressões'
   | 'falsas amigas'
-  | 'frases e expressões'
-  | 'rodízio'
+  | 'frases úteis'
   | string;
 
 export type VocabItem = {

@@ -11,10 +11,12 @@ const VOICE_KEY = 'cocina_voice';
 const defaultChef = (): ChefData => ({ consolidated: 0, achievements: [] });
 
 function migrateCats(cats: string[]): string[] {
-  const mapped = cats.map((c) => {
-    if (c === 'verduras') return 'vegetais';
-    if (c === 'expressões' || c === 'frases úteis') return 'frases e expressões';
-    return c;
+  const mapped = cats.flatMap((c) => {
+    if (c === 'verduras') return ['vegetais'];
+    // categoria 'frases e expressões' existiu por um breve período e foi
+    // desfeita — expande de volta nas duas categorias originais
+    if (c === 'frases e expressões') return ['expressões', 'frases úteis'];
+    return [c];
   });
   return Array.from(new Set(mapped));
 }
@@ -91,9 +93,8 @@ export async function loadSelectedCats(allCats: string[]): Promise<string[]> {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || !parsed.length) return allCats;
     const migrated = migrateCats(parsed).filter((c) => allCats.includes(c));
-    // If user had an older selection, also include brand-new categories by default
-    const NEW_CATS = new Set(['frases e expressões', 'rodízio']);
-    const extras = allCats.filter((c) => !migrated.includes(c) && NEW_CATS.has(c));
+    // If user had old selection, also include brand-new categories by default
+    const extras = allCats.filter((c) => !migrated.includes(c) && c === 'frases úteis');
     const next = [...migrated, ...extras];
     return next.length ? next : allCats;
   } catch {

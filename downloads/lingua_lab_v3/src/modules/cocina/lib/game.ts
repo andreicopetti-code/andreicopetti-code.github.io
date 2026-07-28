@@ -1,17 +1,11 @@
 import itemsJson from '../data/items.json';
 import type { DeckCard, GameSession, VocabItem } from '../types';
-import { MAX_LIVES, MIX_CATEGORY } from '../theme';
+import { MAX_LIVES } from '../theme';
 import { isAnswerCorrect, shuffle } from './normalize';
 import { srsCorrect, srsError, srsPrioritize } from './srs';
 import { loadSRS } from './storage';
 
 export const ITEMS = itemsJson as VocabItem[];
-
-/** rodízio (MIX_CATEGORY) não tem itens próprios: seleciona-lo mistura tudo. */
-export function poolForCats(selectedCats: string[]): VocabItem[] {
-  if (selectedCats.includes(MIX_CATEGORY)) return ITEMS;
-  return ITEMS.filter((it) => selectedCats.includes(it.cat));
-}
 
 export function createInitialSession(): GameSession {
   return {
@@ -34,7 +28,7 @@ export function createInitialSession(): GameSession {
 }
 
 export async function beginGame(selectedCats: string[]): Promise<GameSession> {
-  const pool = poolForCats(selectedCats);
+  const pool = ITEMS.filter((it) => selectedCats.includes(it.cat));
   const db = await loadSRS();
   const prioritized = srsPrioritize(pool, db);
   const splitAt = Math.ceil(prioritized.length * 0.3);

@@ -11,17 +11,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CAT_IMAGE, ORBE_WIZARD } from '../images';
-import { ALL_CATEGORIES, CC, CHEF_LEVELS, MIX_CATEGORY, colors } from '../theme';
-import { ITEMS, poolForCats } from '../lib/game';
-import { categoryProgress, chefLevelProgress, getChefLevel, overallProgress } from '../lib/srs';
+import { ALL_CATEGORIES, CC, CHEF_LEVELS, colors } from '../theme';
+import { ITEMS } from '../lib/game';
+import { chefLevelProgress, getChefLevel } from '../lib/srs';
 import {
   loadChef,
   loadRanking,
   loadSelectedCats,
-  loadSRS,
   saveSelectedCats,
 } from '../lib/storage';
-import type { ChefData, RankingEntry, SrsDb } from '../types';
+import type { ChefData, RankingEntry } from '../types';
 
 type Props = {
   onStart: (cats: string[]) => void;
@@ -57,24 +56,24 @@ export function SplashScreen({ onStart }: Props) {
   const [selected, setSelected] = useState<string[]>(ALL_CATEGORIES);
   const [chef, setChef] = useState<ChefData>({ consolidated: 0, achievements: [] });
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [srs, setSrs] = useState<SrsDb>({});
 
   useEffect(() => {
     (async () => {
-      const [cats, c, r, db] = await Promise.all([
+      const [cats, c, r] = await Promise.all([
         loadSelectedCats(ALL_CATEGORIES),
         loadChef(),
         loadRanking(),
-        loadSRS(),
       ]);
       setSelected(cats);
       setChef(c);
       setRanking(r);
-      setSrs(db);
     })();
   }, []);
 
-  const wordCount = useMemo(() => poolForCats(selected).length, [selected]);
+  const wordCount = useMemo(
+    () => ITEMS.filter((it) => selected.includes(it.cat)).length,
+    [selected],
+  );
 
   const lv = getChefLevel(chef.consolidated || 0);
   const prog = chefLevelProgress(chef.consolidated || 0);
@@ -164,10 +163,7 @@ export function SplashScreen({ onStart }: Props) {
             }
             const col = CC[c];
             const sel = selected.includes(c);
-            const { done, total } =
-              c === MIX_CATEGORY
-                ? overallProgress(ITEMS, srs)
-                : categoryProgress(ITEMS, c, srs);
+            const total = ITEMS.filter((it) => it.cat === c).length;
             const img = CAT_IMAGE[c];
             return (
               <Pressable
@@ -186,7 +182,7 @@ export function SplashScreen({ onStart }: Props) {
                   {c}
                 </Text>
                 <Text style={[styles.cellMeta, sel && { color: col.c }]}>
-                  {sel ? '✓' : done > 0 ? `${done}/${total}` : `${total}`}
+                  {sel ? '✓' : `${total}`}
                 </Text>
               </Pressable>
             );

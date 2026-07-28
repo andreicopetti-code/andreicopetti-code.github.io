@@ -69,14 +69,4 @@ export function categoryProgress(
   return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
 }
 
-/** Progresso agregado de TODOS os itens — usado pela categoria especial "rodízio". */
-export function overallProgress(
-  items: VocabItem[],
-  db: SrsDb,
-): { done: number; total: number; pct: number } {
-  const done = items.filter((it) => (db[it.pt]?.correct || 0) >= 3).length;
-  const total = items.length;
-  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
-}
-
 export type { ChefData };
