@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CAT_IMAGE, ORBE_WIZARD } from '../images';
-import { ALL_CATEGORIES, CC, CHEF_LEVELS, colors } from '../theme';
-import { ITEMS } from '../lib/game';
-import { categoryProgress, chefLevelProgress, getChefLevel } from '../lib/srs';
+import { ALL_CATEGORIES, CC, CHEF_LEVELS, MIX_CATEGORY, colors } from '../theme';
+import { ITEMS, poolForCats } from '../lib/game';
+import { categoryProgress, chefLevelProgress, getChefLevel, overallProgress } from '../lib/srs';
 import {
   loadChef,
   loadRanking,
@@ -74,10 +74,7 @@ export function SplashScreen({ onStart }: Props) {
     })();
   }, []);
 
-  const wordCount = useMemo(
-    () => ITEMS.filter((it) => selected.includes(it.cat)).length,
-    [selected],
-  );
+  const wordCount = useMemo(() => poolForCats(selected).length, [selected]);
 
   const lv = getChefLevel(chef.consolidated || 0);
   const prog = chefLevelProgress(chef.consolidated || 0);
@@ -167,7 +164,10 @@ export function SplashScreen({ onStart }: Props) {
             }
             const col = CC[c];
             const sel = selected.includes(c);
-            const { done, total } = categoryProgress(ITEMS, c, srs);
+            const { done, total } =
+              c === MIX_CATEGORY
+                ? overallProgress(ITEMS, srs)
+                : categoryProgress(ITEMS, c, srs);
             const img = CAT_IMAGE[c];
             return (
               <Pressable

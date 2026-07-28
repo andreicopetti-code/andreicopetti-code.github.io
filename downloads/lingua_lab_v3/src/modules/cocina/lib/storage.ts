@@ -11,7 +11,11 @@ const VOICE_KEY = 'cocina_voice';
 const defaultChef = (): ChefData => ({ consolidated: 0, achievements: [] });
 
 function migrateCats(cats: string[]): string[] {
-  const mapped = cats.map((c) => (c === 'verduras' ? 'vegetais' : c));
+  const mapped = cats.map((c) => {
+    if (c === 'verduras') return 'vegetais';
+    if (c === 'expressões' || c === 'frases úteis') return 'frases e expressões';
+    return c;
+  });
   return Array.from(new Set(mapped));
 }
 
@@ -87,8 +91,9 @@ export async function loadSelectedCats(allCats: string[]): Promise<string[]> {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || !parsed.length) return allCats;
     const migrated = migrateCats(parsed).filter((c) => allCats.includes(c));
-    // If user had old selection, also include brand-new categories by default
-    const extras = allCats.filter((c) => !migrated.includes(c) && c === 'frases úteis');
+    // If user had an older selection, also include brand-new categories by default
+    const NEW_CATS = new Set(['frases e expressões', 'rodízio']);
+    const extras = allCats.filter((c) => !migrated.includes(c) && NEW_CATS.has(c));
     const next = [...migrated, ...extras];
     return next.length ? next : allCats;
   } catch {

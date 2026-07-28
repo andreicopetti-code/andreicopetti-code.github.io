@@ -1,6 +1,6 @@
 import type { ImageSourcePropType } from 'react-native';
 
-/** ART_ASSETS_V3 — vegetais + frases úteis */
+/** ART_ASSETS_V4 — vegetais + frases e expressões (mescladas) + rodízio (mix) + ícone novo de utensílios */
 export const ORBE_WIZARD = require('../../../assets/cocina/orbe-wizard.png') as ImageSourcePropType;
 
 export const CAT_IMAGE: Record<string, ImageSourcePropType> = {
@@ -13,7 +13,7 @@ export const CAT_IMAGE: Record<string, ImageSourcePropType> = {
   bebidas: require('../../../assets/cocina/cat-bebidas.png'),
   'utensílios': require('../../../assets/cocina/cat-utensilios.png'),
   mercado: require('../../../assets/cocina/cat-mercado.png'),
-  'expressões': require('../../../assets/cocina/cat-expressoes.png'),
-  'frases úteis': require('../../../assets/cocina/cat-frases-uteis.png'),
   'falsas amigas': require('../../../assets/cocina/cat-falsas-amigas.png'),
+  'frases e expressões': require('../../../assets/cocina/cat-frases-uteis.png'),
+  'rodízio': require('../../../assets/cocina/cat-rodizio.png'),
 };
